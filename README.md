@@ -86,6 +86,30 @@ The Hermes Orchestrator coordinates agent execution and aggregates structured re
 
 ---
 
+# Screenshots
+
+## Dashboard Interface
+
+![Dashboard](./screenshots/dashboard.png)
+
+---
+## Loading State
+
+![API Response](./screenshots/loading-state.png)
+
+---
+## Multi-Agent API Response
+
+![API Response](./screenshots/api-response.png)
+
+---
+
+## Swagger Endpoint Testing
+
+![Swagger](./screenshots/swagger.png)
+
+---
+
 # AI Agents
 
 ## Security Analyst Node
