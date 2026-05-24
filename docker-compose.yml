@@ -1,42 +1,29 @@
 services:
-  # Local AI Worker Layer (Serving Gemma-Hermes for Autonomous Task Execution)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: crew-ollama-core
-    ports:
-      - "11436:11434" # Binds external host port 11436 to internal default container port 11434
-    volumes:
-      - crew_ollama_storage:/root/.ollama
-    environment:
-      - OLLAMA_NUM_PARALLEL=4 # Allocates context rooms for multiple agents simultaneously
-      # Let up to 2 models stay alive in VRAM/RAM together without swapping out
-      - OLLAMA_MAX_LOADED_MODELS=2 # Prevents RAM thrashing by locking Gemma into VRAM/RAM
-    restart: always
-    networks:
-      - gotihub_network
-
-  # Enterprise FastAPI Engine (Orchestrating Security, Planner, & Action Loop)
+  # 1. Enterprise FastAPI Engine (Orchestrating Security, Planner, & Action Loop)
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     container_name: crew-backend-api
     ports:
-      - "8000" # Internal container default port (not mapped directly to host)
       - "8001:8000" # Binds external host port 8001 to internal API port 8000
     volumes:
       - ./backend/data:/app/data # Persistent production directory for your SQLite DB
     environment:
-      - OLLAMA_BASE_URL=http://crew-ollama-core:11434  # For official SDKs/CrewAI
-      - OLLAMA_URL=http://crew-ollama-core:11434       # For custom API scripts
+      # ⚡ SHARED BRAIN ROUTING: Pass payloads directly to the centralized global instance name
+      - OLLAMA_BASE_URL=http://global-ollama-core:11434
+      - OLLAMA_URL=http://global-ollama-core:11434
+      - WORKER_MODEL=gemma3:1b
+      - MASTER_MODEL=hermes3:3b
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DATABASE_URL=sqlite:////app/data/gotihub_crew.db
       - ENV=production
-    depends_on:
-      - ollama
     restart: always
     networks:
       - gotihub_network
+      - ai_shared_backbone # 🔌 Connect to the centralized global AI highway
 
-  # Slick Production Nginx Server (Serving static agent dashboards & proxying API)
+  # 2. Slick Production Nginx Server (Serving static agent dashboards & proxying API)
   frontend:
     build:
       context: . # Root context so Docker can read both ./frontend and ./docker paths
@@ -50,10 +37,10 @@ services:
     networks:
       - gotihub_network
 
-volumes:
-  crew_ollama_storage:
-
+# ⚡ GLOBAL CHANNELS MATRIX
 networks:
   gotihub_network:
     name: gotihub_global_network
-    external: true # Bridges the agent ecosystem straight to your master ingress gateway
+    external: true # Bridges the frontend and API straight to your master ingress gateway router
+  ai_shared_backbone:
+    external: true # Bridges the Python backend straight to the global Ollama machine
