@@ -14,11 +14,3 @@ app.add_middleware(
 )
 
 app.include_router(router)
-
-@app.get("/", tags=["Health Check"])
-def root_check():
-    return {
-        "status": "online",
-        "engine": settings.PROJECT_NAME,
-        "orchestrator_target": 'hermess'
-    }
