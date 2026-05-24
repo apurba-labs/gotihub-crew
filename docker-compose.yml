@@ -6,11 +6,10 @@ services:
       dockerfile: Dockerfile
     container_name: crew-backend-api
     ports:
-      - "8001:8000" # Binds external host port 8001 to internal API port 8000
+      - "8001:8000"
     volumes:
-      - ./backend/data:/app/data # Persistent production directory for your SQLite DB
+      - ./backend/data:/app/data
     environment:
-      # ⚡ SHARED BRAIN ROUTING: Pass payloads directly to the centralized global instance name
       - OLLAMA_BASE_URL=http://global-ollama-core:11434
       - OLLAMA_URL=http://global-ollama-core:11434
       - WORKER_MODEL=gemma3:1b
@@ -18,19 +17,25 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DATABASE_URL=sqlite:////app/data/gotihub_crew.db
       - ENV=production
+    # ⚡ OVERRIDE IMAGE HEALTHCHECK: Uses native bash/sh routing to check if port 8000 is listening
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c '</dev/tcp/127.0.0.1/8000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: always
     networks:
       - gotihub_network
-      - ai_shared_backbone # 🔌 Connect to the centralized global AI highway
+      - ai_shared_backbone
 
   # 2. Slick Production Nginx Server (Serving static agent dashboards & proxying API)
   frontend:
     build:
-      context: . # Root context so Docker can read both ./frontend and ./docker paths
+      context: .
       dockerfile: ./docker/nginx/Dockerfile
     container_name: crew-frontend-web
     ports:
-      - "8082:80" # Binds external host web port 8082 to internal Nginx container port 80
+      - "8082:80"
     depends_on:
       - backend
     restart: always
@@ -41,6 +46,6 @@ services:
 networks:
   gotihub_network:
     name: gotihub_global_network
-    external: true # Bridges the frontend and API straight to your master ingress gateway router
+    external: true
   ai_shared_backbone:
-    external: true # Bridges the Python backend straight to the global Ollama machine
+    external: true
