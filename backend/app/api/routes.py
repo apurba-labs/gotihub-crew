@@ -1,5 +1,6 @@
 import httpx
 import logging
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
 
@@ -17,6 +18,7 @@ orchestrator = HermesOrchestrator()
 
 class RepoRequest(BaseModel):
     repo_url: str
+    github_token: Optional[str] = None
 
 
 @router.get("/")
@@ -54,9 +56,10 @@ async def analyze_repo(request: RepoRequest):
     logger.info(f"[API Route] Initializing analysis request for target: {request.repo_url}")
     
     try:
-        # 1. Pull down repository files into temporary buffer memory
+        # Pull down repository files into temporary buffer memory
         repository_files = await github_loader.fetch_repository_contents(
-            request.repo_url
+            request.repo_url,
+            github_token=request.github_token
         )
         
         if not repository_files:
@@ -65,7 +68,7 @@ async def analyze_repo(request: RepoRequest):
                 detail="The requested repository content tree is empty or inaccessible."
             )
 
-        # 2. ⚡ FIXED: Correctly pass BOTH arguments matching your production orchestration signature
+        # Correctly pass BOTH arguments matching your production orchestration signature
         report = await orchestrator.run_analysis(
             repo_url=request.repo_url,
             repository_files=repository_files

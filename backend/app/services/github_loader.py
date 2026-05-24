@@ -16,7 +16,7 @@ class GitHubLoader:
         # Bring in your corporate github token from system variables if available
         self.github_token = settings.GITHUB_TOKEN
 
-    async def fetch_repository_contents(self, repo_url: str) -> Dict[str, str]:
+    async def fetch_repository_contents(self, repo_url: str, github_token: str = None) -> Dict[str, str]:
         # Start timer for GitHub downloads
         start_time = time.perf_counter()
         
@@ -30,7 +30,10 @@ class GitHubLoader:
         }
         
         # Authenticate if a token exists to unlock 5,000 requests per hour
-        if self.github_token:
+        if github_token:
+            headers["Authorization"] = f"token {github_token}"
+            logger.info("[GitHubLoader] Inbound authorization token loaded successfully.")
+        elif self.github_token:
             headers["Authorization"] = f"token {self.github_token}"
             logger.info("[GitHubLoader] Outbound authorization token loaded successfully.")
 

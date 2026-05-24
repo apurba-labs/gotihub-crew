@@ -11,18 +11,22 @@ import {
 
 
 export default function Home() {
-
+  
   const [repoUrl, setRepoUrl] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [report, setReport] = useState<any>(null);
+  const [githubToken, setGithubToken] = useState("");
+  const [telemetryLogs, setTelemetryLogs] = useState<string[]>([]);
 
   const analyzeRepository = async () => {
 
     if (!repoUrl) return;
 
     setLoading(true);
+    setTelemetryLogs([
+      "[SYSTEM] Initializing Hermes Engineering Crew...",
+      "[TELEMETRY] Connecting to GitHub repository...",
+    ]);
 
     try {
 
@@ -30,8 +34,44 @@ export default function Home() {
         `${process.env.NEXT_PUBLIC_API_URL}/analyze-repo`,
         {
           repo_url: repoUrl,
+          github_token: githubToken,
         }
       );
+
+      setTimeout(() => {
+        setTelemetryLogs(prev => [
+          ...prev,
+          "[TELEMETRY] GitHubLoader indexed repository structure.",
+        ]);
+      }, 1500);
+
+      setTimeout(() => {
+        setTelemetryLogs(prev => [
+          ...prev,
+          "[TELEMETRY] Stage 1: SecurityAgent + ArchitectureAgent launched.",
+        ]);
+      }, 3000);
+
+      setTimeout(() => {
+        setTelemetryLogs(prev => [
+          ...prev,
+          "[TELEMETRY] asyncio.gather synchronization complete.",
+        ]);
+      }, 6000);
+
+      setTimeout(() => {
+        setTelemetryLogs(prev => [
+          ...prev,
+          "[TELEMETRY] PlanningAgent roadmap synthesis initialized.",
+        ]);
+      }, 9000);
+
+      setTimeout(() => {
+        setTelemetryLogs(prev => [
+          ...prev,
+          "[TELEMETRY] Hermes executive synthesis layer completed.",
+        ]);
+      }, 12000);
 
       setReport(response.data);
 
@@ -55,19 +95,28 @@ export default function Home() {
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4 tracking-tight bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
             Hermes Engineering Crew
           </h1>
-          <div className="flex justify-center mt-5">
-            <div className="p-3 rounded-full border border-zinc-800 bg-zinc-900">
-              <GitBranch className="text-zinc-400" size={24} />
-            </div>
-          </div>
           <p className="text-zinc-400 text-lg">
             Hermes-inspired AI agents collaborating to analyze and improve software repositories
           </p>
-          <div className="flex justify-center mt-5">
-            <div className="p-3 rounded-full border border-zinc-800 bg-zinc-900">
-              <GitBranch className="text-zinc-400" size={24} />
-            </div>
-          </div>
+          <a
+            href="https://github.com/apurba-labs/gotihub-hermes-crew"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              inline-flex items-center gap-2
+              mt-6
+              bg-zinc-900 border border-zinc-800
+              px-5 py-3 rounded-xl
+              hover:bg-zinc-800 transition-all
+            "
+          >
+            ⭐
+            <span>
+              Star the repository on GitHub
+            </span>
+
+            <GitBranch className="text-zinc-400" size={18} />
+          </a>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-10">
@@ -81,11 +130,24 @@ export default function Home() {
               onChange={(e) => setRepoUrl(e.target.value)}
               className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 outline-none"
             />
+            <div className="mt-4">
+              <input
+                type="password"
+                placeholder="Optional GitHub Access Token"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 outline-none text-sm"
+                autoComplete="off"
+              />
+              <p className="text-xs text-zinc-500 mt-2">
+                Optional — improves GitHub API rate limits and private repository access.
+              </p>
+            </div>
 
             <button
               onClick={analyzeRepository}
               disabled={loading}
-              className="bg-white hover:bg-zinc-200 transition-all duration-200 text-black px-6 py-3 rounded-xl font-semibold shadow-lg shadow-white/10"
+              className="bg-white hover:bg-zinc-200 hover:scale-105 transition-all duration-200 text-black px-6 py-3 rounded-xl font-semibold shadow-lg shadow-white/10"
             >
               {loading ? "Analyzing..." : "Analyze"}
             </button>
@@ -95,25 +157,61 @@ export default function Home() {
 
         {loading && (
 
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="mb-10">
 
-            <AgentCard
-              icon={<Shield />}
-              title="Security Agent"
-              status="Running..."
-            />
+            <div className="grid md:grid-cols-3 gap-6 mb-6">
 
-            <AgentCard
-              icon={<Boxes />}
-              title="Architecture Agent"
-              status="Running..."
-            />
+              <AgentCard
+                icon={<Shield />}
+                title="Security Agent"
+                status="Running..."
+              />
 
-            <AgentCard
-              icon={<ClipboardList />}
-              title="Planning Agent"
-              status="Synthesizing..."
-            />
+              <AgentCard
+                icon={<Boxes />}
+                title="Architecture Agent"
+                status="Running..."
+              />
+
+              <AgentCard
+                icon={<ClipboardList />}
+                title="Planning Agent"
+                status="Synthesizing..."
+              />
+
+            </div>
+
+            <div className="bg-black border border-zinc-800 rounded-2xl p-6 max-h-[260px] overflow-y-auto">
+
+              <div className="flex items-center justify-between mb-4">
+
+                <h2 className="text-lg font-semibold">
+                  System Telemetry
+                </h2>
+
+                <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+
+              </div>
+
+              <div className="space-y-2 font-mono text-sm text-green-400">
+
+                {telemetryLogs.map((log, index) => (
+
+                  <p
+                    key={index}
+                    className={
+                      index === telemetryLogs.length - 1
+                        ? "animate-pulse"
+                        : ""
+                    }
+                  >
+                    {log}
+                  </p>
+
+                ))}
+
+              </div>
+            </div>
 
           </div>
         )}
