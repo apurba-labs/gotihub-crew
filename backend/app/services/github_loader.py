@@ -12,8 +12,16 @@ class GitHubLoader:
         # Read from renamed explicit fallback configs
         self.timeout = float(settings.GITHUB_FETCH_TIMEOUT)
         self.max_files = settings.MAX_REPO_FILES
-        self.supported_extensions = settings.SUPPORTED_EXTENSIONS
         self.github_token = settings.GITHUB_TOKEN
+        
+        # THE ULTIMATE TYPE SAFETY FIX: Force raw string to a clean Python tuple
+        raw_exts = settings.SUPPORTED_EXTENSIONS
+        if isinstance(raw_exts, str):
+            self.supported_extensions = tuple(ext.strip() for ext in raw_exts.split(",") if ext.strip())
+        else:
+            self.supported_extensions = tuple(raw_exts)
+            
+        print(f"[FIXED] Loader Extensions Type Casted Cleanly: {self.supported_extensions} (Type: {type(self.supported_extensions)})")
 
     async def fetch_repository_contents(self, repo_url: str, github_token: str = None) -> Dict[str, str]:
         start_time = time.perf_counter()
