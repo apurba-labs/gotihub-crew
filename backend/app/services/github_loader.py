@@ -30,10 +30,10 @@ class GitHubLoader:
         }
         
         # Authenticate if a token exists to unlock 5,000 requests per hour
-        if github_token:
+        if github_token and github_token.strip():
             headers["Authorization"] = f"token {github_token}"
             logger.info("[GitHubLoader] Inbound authorization token loaded successfully.")
-        elif self.github_token:
+        elif self.github_token and self.github_token.strip():
             headers["Authorization"] = f"token {self.github_token}"
             logger.info("[GitHubLoader] Outbound authorization token loaded successfully.")
 

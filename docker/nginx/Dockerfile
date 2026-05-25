@@ -1,7 +1,7 @@
 # ==========================================
 # STAGE 1: Frontend Asset Compilation Engine
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -10,6 +10,8 @@ COPY ./frontend/package*.json ./
 
 # Install clean production dependencies 
 RUN npm ci
+
+COPY ./frontend/.env* ./
 
 # Copy the rest of the frontend source code files
 COPY ./frontend/ ./
