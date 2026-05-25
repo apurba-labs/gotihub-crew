@@ -18,7 +18,7 @@ class LLMService:
         Processes incoming agent requests. If given a dictionary, it routes straight 
         to /api/chat. If given a string, it routes cleanly to /api/generate.
         """
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=float(self.timeout)) as client:
             try:
                 # Scenario A: Agent sends a fully structured, production multi-turn dictionary payload
                 if isinstance(payload, dict):
@@ -32,7 +32,7 @@ class LLMService:
                     response = await client.post(
                         target_url,
                         json=payload,
-                        timeout=self.timeout
+                        timeout=float(self.timeout)
                     )
                     response.raise_for_status()
                     data = response.json()
@@ -54,7 +54,7 @@ class LLMService:
                     response = await client.post(
                         target_url,
                         json=flat_payload,
-                        timeout=self.timeout
+                        timeout=float(self.timeout)
                     )
                     response.raise_for_status()
                     data = response.json()

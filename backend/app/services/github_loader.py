@@ -9,7 +9,7 @@ logger = logging.getLogger("hermes.services.github")
 
 class GitHubLoader:
     def __init__(self):
-        self.timeout = 20.0
+        self.timeout = float(settings.GITHUB_FETCH_TIMEOUT)
         self.max_files = settings.MAX_REPO_FILES
         self.supported_extensions = settings.SUPPORTED_EXTENSIONS
         

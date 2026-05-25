@@ -15,7 +15,10 @@ logger = logging.getLogger("hermes.orchestrator")
 class HermesOrchestrator:
 
     def __init__(self):
+        
         self.ollama_url = f"{settings.OLLAMA_URL}/api/chat"
+        self.timeout = getattr(settings, "MASTER_TIMEOUT", 120.0)
+        
         # Instantiate the 3 specialized worker nodes
         self.security_agent = SecurityAgent()
         self.architecture_agent = ArchitectureAgent()
@@ -124,7 +127,7 @@ Score: {plan_report.score}
         
         try:
             # Dispatch the payload bundle down to your Ollama container service
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=float(self.timeout)) as client:
                 res = await client.post(self.ollama_url, json=hermes_payload)
                 if res.status_code == 200:
                     raw_content = res.json()["message"]["content"]
