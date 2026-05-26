@@ -23,7 +23,7 @@ class LLMService:
         optimized_options = {
             "num_ctx": 8192,         # 1. Expand context boundary limits to prevent cache thrashing
             "temperature": 0.2,      # 2. Lower temperature for faster, deterministic JSON layouts
-            "num_predict": 1024,     # 3. Prevent run-away token generation strings
+            "num_predict": 3072,     # 3. Gives the sub-agents plenty of room to write detailed reports
             "use_mmap": True         # 4. Enforce memory-mapped files to guarantee instant KV caching
         }
 
