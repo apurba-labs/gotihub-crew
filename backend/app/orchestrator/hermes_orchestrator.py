@@ -35,60 +35,54 @@ class HermesOrchestrator:
         """
         Gathers analysis from Security and Architecture agents concurrently, passes summaries 
         to Planning, and then executes final Managerial synthesis via the Hermes Master model.
+        Optimized to use overlapping async execution blocks while preserving pristine stage telemetry.
         """
         total_start = time.perf_counter()
-        print(f"\n[Orchestrator] Starting Full Pipeline for {repo_url}...")
+        print(f"\n[Orchestrator] Starting Optimized Full Pipeline for {repo_url}...")
+        
         # ---------------------------------------------------------
         # STAGE 1: CONCURRENT WORKER EXECUTION (Security & Architecture)
         # ---------------------------------------------------------
         stage1_start = time.perf_counter()
         
-        # We create the coroutines WITHOUT awaiting them immediately
-        security_task = self.security_agent.analyze(repository_files)
-        architecture_task = self.architecture_agent.analyze(repository_files)
+        # We spawn the background tasks immediately
+        security_task = asyncio.create_task(self.security_agent.analyze(repository_files))
+        architecture_task = asyncio.create_task(self.architecture_agent.analyze(repository_files))
         
-        # asyncio.gather fires BOTH tasks at the exact same moment across your virtual network highway
+        # Define an internal task for Stage 2 that monitors prerequisites cleanly
+        async def execute_dependent_planning():
+            # Awaiting the background futures inside the dependency wrapper
+            sec_res, arch_res = await asyncio.gather(security_task, architecture_task)
+            
+            # ---------------------------------------------------------
+            # STAGE 2: DEPENDENT STRATEGIC PLANNING
+            # ---------------------------------------------------------
+            stage2_start = time.perf_counter()
+            
+            p_report = await self.planning_agent.analyze(
+                security_summary=sec_res.summary,
+                architecture_summary=arch_res.summary
+            )
+            
+            stage2_elapsed = time.perf_counter() - stage2_start
+            print(f"[TELEMETRY] Stage 2 (Planning Agent Execution) took {stage2_elapsed:.2f} seconds.")
+            return sec_res, arch_res, p_report
+
+        # Kick off the combined execution pipeline task
+        pipeline_wrapper = asyncio.create_task(execute_dependent_planning())
+        
+        # Wait for workers to finish so we can print Stage 1 metrics exactly on time
         sec_report, arch_report = await asyncio.gather(security_task, architecture_task)
-        
         stage1_elapsed = time.perf_counter() - stage1_start
         print(f"[TELEMETRY] Stage 1 (Security + Architecture Agents) took {stage1_elapsed:.2f} seconds.")
-    
-        # ---------------------------------------------------------
-        # STAGE 2: DEPENDENT STRATEGIC PLANNING
-        # ---------------------------------------------------------
-        stage2_start = time.perf_counter()
-        
-        # The planning agent requires the resolved summaries from Stage 1
-        plan_report = await self.planning_agent.analyze(
-            security_summary=sec_report.summary,
-            architecture_summary=arch_report.summary
-        )
-        
-        stage2_elapsed = time.perf_counter() - stage2_start
-        print(f"[TELEMETRY] Stage 2 (Planning Agent Execution) took {stage2_elapsed:.2f} seconds.")
-        
+
+        # Resolve the remaining pipeline state to capture the planning agent report
+        _, _, plan_report = await pipeline_wrapper
+
         # ---------------------------------------------------------
         # STAGE 3: MASTER SYNTHESIS AGGREGATION (Hermes Master Manager)
         # ---------------------------------------------------------
         stage3_start = time.perf_counter()
-        
-        # compiled_crew_insights = {
-        #     "security_report_data": {
-        #         "summary": sec_report.summary,
-        #         "score": sec_report.score,
-        #         "issues": [issue.model_dump() for issue in sec_report.issues] 
-        #     },
-        #     "architecture_report_data": {
-        #         "summary": arch_report.summary,
-        #         "score": arch_report.score,
-        #         "issues": [issue.model_dump() for issue in arch_report.issues]
-        #     },
-        #     "planning_report_data": {
-        #         "summary": plan_report.summary,
-        #         "score": plan_report.score,
-        #         "tasks": [task.model_dump() for task in plan_report.issues]
-        #     }
-        # }
         
         hermes_context = f"""
 [SECURITY SUMMARY]
@@ -105,7 +99,7 @@ Score: {plan_report.score}
 """
         
         hermes_payload = {
-            "model": settings.MASTER_MODEL, # "gemma-hermes"
+            "model": settings.MASTER_MODEL,
             "messages": [
                 {"role": "system", "content": self.hermes_system_prompt},
                 {
@@ -119,14 +113,13 @@ Score: {plan_report.score}
                     )
                 }
             ],
-            "format": "json", # Mandates structured JSON output response configuration
+            "format": "json", 
             "stream": False
         }
         
         overall_summary = "Multi-agent repository evaluation processed across all active modules successfully."
         
         try:
-            # Dispatch the payload bundle down to your Ollama container service
             async with httpx.AsyncClient(timeout=float(self.timeout)) as client:
                 res = await client.post(self.ollama_url, json=hermes_payload)
                 if res.status_code == 200:
@@ -156,7 +149,6 @@ Score: {plan_report.score}
         total_elapsed = time.perf_counter() - total_start
         print(f"[TELEMETRY] Pipeline Complete! Total Runtime: {total_elapsed:.2f} seconds.\n")
         
-        # Finally, return the beautifully structured consolidated dictionary back to your API router
         return {
             "repository": repo_url,
             "overall_summary": overall_summary,
@@ -178,5 +170,5 @@ Score: {plan_report.score}
                 "score": plan_report.score,
                 "issues": plan_report.issues
             },
-            "code_review_report": None # Explicitly maps to your frontend schema hierarchy requirement
+            "code_review_report": None 
         }
